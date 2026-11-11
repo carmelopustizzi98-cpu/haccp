@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HACCP Bar Tabacchi</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f5f1;--card:#fff;--tx:#1d1d1b;--mu:#6b6b66;--ln:#d9d7cf;--ac:#1f6f5c;--act:#fff;--bad:#c62828;--badbg:#fdeaea;--ok:#e6f3ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#171715;--card:#222220;--tx:#eeede8;--mu:#a3a29b;--ln:#3a3a36;--ac:#4cb398;--act:#0d1f1a;--bad:#ff8a80;--badbg:#3a1f1f;--ok:#1e2e28}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#171715;--card:#222220;--tx:#eeede8;--mu:#a3a29b;--ln:#3a3a36;--ac:#4cb398;--act:#0d1f1a;--bad:#ff8a80;--badbg:#3a1f1f;--ok:#1e2e28}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5;padding:10px 12px 0;border-bottom:1px solid var(--ln)}
+h1{font-size:18px;margin:0 0 8px}
+.mrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.mrow b{flex:1;text-align:center;font-size:17px}
+button,select,input{font:inherit;color:var(--tx)}
+button{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:8px 14px;cursor:pointer}
+button.p{background:var(--ac);color:var(--act);border-color:var(--ac);font-weight:600}
+.tabs{display:flex;gap:4px;overflow-x:auto}
+.tabs button{border:0;border-radius:10px 10px 0 0;background:none;color:var(--mu);white-space:nowrap;padding:9px 12px}
+.tabs button.on{background:var(--card);color:var(--tx);font-weight:600;box-shadow:inset 0 -3px var(--ac)}
+main{padding:12px;max-width:900px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px;margin-bottom:14px}
+.note{color:var(--mu);font-size:14px;margin:0 0 10px}
+.sc{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid var(--ln);padding:3px;text-align:center}
+th{font-size:12px;background:var(--bg)}
+td.d{font-weight:600;width:34px}
+input[type=text],input[type=date],select{width:100%;min-width:54px;padding:7px 4px;border:1px solid var(--ln);border-radius:8px;background:var(--card);text-align:center}
+input.bad{background:var(--badbg);border-color:var(--bad);color:var(--bad);font-weight:700}
+input[type=checkbox]{width:24px;height:24px;accent-color:var(--ac)}
+tr.today td{background:var(--ok)}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:6px}
+.chips label{display:flex;gap:6px;align-items:center;border:1px solid var(--ln);border-radius:10px;padding:6px 8px;background:var(--card)}
+h2{font-size:16px;margin:4px 0 8px}
+.pdf{display:grid;gap:8px}
+.pdf button{padding:14px;text-align:left}
+.msg{color:var(--mu);font-size:14px;margin-top:8px;min-height:20px}
+.rc{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--ln)}
+.rc label{font-size:12px;color:var(--mu);display:flex;flex-direction:column;gap:2px}
+#sh{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end}
+.shb{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.shc{position:relative;background:var(--card);border-radius:16px 16px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));display:grid;gap:10px}
+.opts{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.opts button{padding:16px 0;font-size:20px;font-weight:600;text-align:center}
+.man{display:flex;gap:8px}.man input{flex:1;min-width:0;padding:10px;font-size:18px;border:1px solid var(--ln);border-radius:10px;background:var(--card);text-align:center}
+input[readonly]{cursor:pointer}
+input[data-dt]{min-width:92px}
+</style></head><body>
+<header>
+<h1>HACCP · Bar Tabacchi</h1>
+<div class="mrow"><button id="pv">‹</button><b id="ml"></b><button id="nx">›</button></div>
+<div class="tabs" id="tabs"></div>
+</header>
+<main id="m"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+const MN=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const TABS=[["t","Temperature"],["p","Pulizie"],["i","Insetti e roditori"],["r","Merci in entrata"],["s","Stampa PDF"]];
+const pad=n=>String(n).padStart(2,"0");
+const now=new Date();
+let y=now.getFullYear(),mo=now.getMonth()+1,tab="t",D={},db=null,uid=null,timer=null;
+const key=()=>y+"-"+pad(mo);
+const dim=()=>new Date(y,mo,0).getDate();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num=v=>parseFloat(String(v).replace(",","."));
+function get(p){return p.split(".").reduce((o,k)=>o==null?o:o[k],D)}
+function set(p,v){const a=p.split(".");let o=D;a.slice(0,-1).forEach(k=>{if(o[k]==null||typeof o[k]!=="object")o[k]={};o=o[k]});o[a[a.length-1]]=v;save()}
+function save(){
+  try{localStorage.setItem("haccp:"+key(),JSON.stringify(D))}catch(e){}
+  clearTimeout(timer);const k=key(),snap=JSON.stringify(D);
+  timer=setTimeout(async()=>{if(db&&uid){try{await db.collection("data/users/"+uid).doc(k).set({json:snap})}catch(e){}}},700);
+}
+async function load(){
+  const k=key();D={};
+  try{D=JSON.parse(localStorage.getItem("haccp:"+k)||"{}")}catch(e){}
+  render();
+  if(db&&uid){try{const s=await db.collection("data/users/"+uid).doc(k).get();
+    if(s.exists&&s.data().json&&k===key()){D=JSON.parse(s.data().json);render()}}catch(e){}}
+}
+const bad=(f,v)=>{const n=num(v);if(isNaN(n))return false;return f?n>-18:n>8};
+function tInput(d,f,k){const v=get(`t.${d}.${k}`)??"";return `<td><input type="text" readonly data-p="t.${d}.${k}" data-f="${f}" value="${esc(v)}" class="${bad(f,v)?"bad":""}"></td>`}
+function render(){
+  $("#ml").textContent=MN[mo-1]+" "+y;
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button data-tab="${k}" class="${k===tab?"on":""}">${l}</button>`).join("");
+  const n=dim(),td=(now.getFullYear()===y&&now.getMonth()+1===mo)?now.getDate():0;let h="";
+  if(tab==="t"){
+    h=`<p class="note">Scrivi solo il numero. Limite frigoriferi: max 8 °C · congelatore: −18 °C. Se è fuori limite la casella diventa rossa.</p><div class="card sc"><table><tr><th rowspan="2">G.</th><th colspan="2">Frigo BIANCO</th><th colspan="2">Frigo GIALLO</th><th rowspan="2">Cong. −18</th></tr><tr><th>Mattina</th><th>Sera</th><th>Mattina</th><th>Sera</th></tr>`;
+    for(let d=1;d<=n;d++)h+=`<tr class="${d===td?"today":""}"><td class="d">${d}</td>${tInput(d,0,"bm")}${tInput(d,0,"bs")}${tInput(d,0,"gm")}${tInput(d,0,"gs")}${tInput(d,1,"c")}</tr>`;
+    h+=`</table></div>`;
+  }else if(tab==="p"){
+    h=`<p class="note">Giornaliere: spunta il giorno quando hai pulito tutto (pavimenti, pareti lavabili basse, utensili, attrezzature, piani di lavoro, macchina del caffè, espositori, bagno).</p><div class="card"><div class="chips">`;
+    for(let d=1;d<=n;d++)h+=`<label><input type="checkbox" data-p="p.${d}" ${get("p."+d)?"checked":""}> ${d}</label>`;
+    h+=`</div></div><div class="card sc"><h2>Settimanali</h2><p class="note">Scrivi la data.</p><table><tr><th></th><th>Frigo BIANCO</th><th>Frigo GIALLO</th><th>Congelatore</th><th>Scaffalature</th><th>Pedana</th></tr>`;
+    for(let w=1;w<=5;w++){h+=`<tr><td class="d">${w}ª</td>`;["fb","fg","co","sc","pe"].forEach(c=>h+=`<td><input type="text" readonly data-dt data-p="w.${w}.${c}" value="${esc(get(`w.${w}.${c}`)??"")}"></td>`);h+=`</tr>`}
+    h+=`</table></div><div class="card sc"><h2>Mensili</h2><table>`;
+    [["ps","Pareti / soffitti"],["pl","Plafoniere"],["po","Porte"]].forEach(([k,l])=>h+=`<tr><td>${l}</td><td><input type="text" readonly data-dt data-p="m.${k}" value="${esc(get("m."+k)??"")}" placeholder="tocca per la data"></td></tr>`);
+    h+=`</table></div>`;
+  }else if(tab==="i"){
+    h=`<p class="note">Spunta "Tutto OK" se non vedi insetti, roditori o rosicchiature. Altrimenti scrivi cosa hai visto e dove.</p><div class="card sc"><table><tr><th>G.</th><th>Tutto OK</th><th>Se NO: cosa / dove</th></tr>`;
+    for(let d=1;d<=n;d++)h+=`<tr class="${d===td?"today":""}"><td class="d">${d}</td><td><input type="checkbox" data-p="i.${d}.ok" ${get(`i.${d}.ok`)?"checked":""}></td><td><input type="text" data-p="i.${d}.n" value="${esc(get(`i.${d}.n`)??"")}"></td></tr>`;
+    h+=`</table></div>`;
+  }else if(tab==="r"){
+    const R=D.r||[];
+    h=`<p class="note">Una scheda per ogni consegna.</p>`;
+    const sel=(i,k,o)=>`<select data-p="r.${i}.${k}"><option value="">—</option>${o.map(x=>`<option ${get(`r.${i}.${k}`)===x?"selected":""}>${x}</option>`).join("")}</select>`;
+    R.forEach((r,i)=>{const C=["Conforme","Non conforme"];h+=`<div class="card"><div class="rc">
+      <label>Data<input type="date" data-p="r.${i}.d" value="${esc(r.d??"")}"></label><label>Fornitore<input type="text" data-p="r.${i}.f" value="${esc(r.f??"")}"></label>
+      <label>Trasporto${sel(i,"tr",C)}</label><label>Merce${sel(i,"me",C)}</label><label>Etichette${sel(i,"et",C)}</label><label>N. fattura<input type="text" data-p="r.${i}.n" value="${esc(r.n??"")}"></label>
+      <label>Esito${sel(i,"ac",["Accettata","Respinta"])}</label><label>Note<input type="text" data-p="r.${i}.o" value="${esc(r.o??"")}"></label></div>
+      <button data-del="${i}">Elimina</button></div>`});
+    h+=`<button class="p" id="add">+ Nuova consegna</button>`;
+  }else{
+    h=`<div class="card"><p class="note">Scarica il PDF del mese di <b>${MN[mo-1]} ${y}</b>. Le firme restano vuote, le firmi a mano dopo la stampa.</p><div class="pdf">
+    <button class="p" data-pdf="all">Tutto il mese (un solo PDF)</button>
+    <button data-pdf="t">Temperature frigoriferi</button><button data-pdf="p">Pulizie</button>
+    <button data-pdf="i">Insetti e roditori</button><button data-pdf="r">Merci in entrata</button></div><div class="msg" id="msg"></div></div>
+    <div class="card"><h2>Copia di sicurezza</h2><p class="note">I dati stanno in questo telefono/computer. Una volta al mese salva una copia: se cambi telefono o cancelli i dati del browser la ripristini con un tocco.</p><div class="pdf"><button class="p" data-bk="exp">Salva copia di sicurezza (tutti i mesi)</button><button data-bk="imp">Ripristina da una copia</button></div><input type="file" id="bkf" accept=".json,application/json" hidden><div class="msg" id="msg2"></div></div>`;
+  }
+  $("#m").innerHTML=h;
+}
+function backup(){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith("haccp:"))o[k]=localStorage.getItem(k)}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(o)],{type:"application/json"}));a.download="HACCP_backup_"+now.getFullYear()+"-"+pad(now.getMonth()+1)+"-"+pad(now.getDate())+".json";document.body.appendChild(a);a.click();a.remove();$("#msg2").textContent="Copia salvata ("+Object.keys(o).length+" mesi)."}
+document.addEventListener("change",e=>{if(e.target.id!=="bkf")return;const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const o=JSON.parse(r.result);let n=0;for(const k in o){if(k.startsWith("haccp:")){localStorage.setItem(k,o[k]);n++}}load();setTimeout(()=>{const m=$("#msg2");if(m)m.textContent="Ripristinati "+n+" mesi."},50)}catch(x){$("#msg2").textContent="File non valido."}};r.readAsText(f)});
+document.addEventListener("click",e=>{
+  const bk=e.target.closest("[data-bk]");if(bk){if(bk.dataset.bk==="exp")backup();else $("#bkf").click();return}
+  const t=e.target.closest("[data-tab]");if(t){tab=t.dataset.tab;render();window.scrollTo(0,0);return}
+  const p=e.target.closest("[data-pdf]");if(p){makePdf(p.dataset.pdf);return}
+  const dl=e.target.closest("[data-del]");if(dl){if(confirm("Eliminare questa consegna?")){D.r.splice(+dl.dataset.del,1);save();render()}return}
+  if(e.target.id==="add"){(D.r=D.r||[]).push({});save();render()}
+});
+document.addEventListener("input",e=>{
+  const p=e.target.dataset&&e.target.dataset.p;if(!p)return;
+  const el=e.target;set(p,el.type==="checkbox"?el.checked:el.value);
+  if(el.dataset.f!==undefined)el.classList.toggle("bad",bad(+el.dataset.f,el.value));
+});
+const LAB={bm:"Frigo BIANCO · mattina",bs:"Frigo BIANCO · sera",gm:"Frigo GIALLO · mattina",gs:"Frigo GIALLO · sera",c:"Congelatore"};
+let cel=null;
+function closeSheet(){const s=$("#sh");if(s)s.remove();cel=null}
+function pick(v){if(!cel)return;cel.value=v;set(cel.dataset.p,v);cel.classList.toggle("bad",bad(+cel.dataset.f,v));closeSheet()}
+function openSheet(el){closeSheet();cel=el;const f=+el.dataset.f,p=el.dataset.p.split("."),ch=f?[-18,-19,-20,-21,-22]:[4,5,6,7,8];
+  const s=document.createElement("div");s.id="sh";
+  s.innerHTML=`<div class="shb"></div><div class="shc"><b>${LAB[p[2]]} · giorno ${p[1]}</b><div class="opts">${ch.map(v=>`<button data-v="${v}">${v}°</button>`).join("")}</div><div class="man"><button data-sg>−</button><input type="text" inputmode="decimal" id="mn" placeholder="Altro valore" value="${esc(el.value)}"><button class="p" data-ok>OK</button></div><div class="man"><button data-clr>Svuota</button><button data-x>Chiudi</button></div></div>`;
+  document.body.appendChild(s)}
+document.addEventListener("click",e=>{
+  const dt=e.target.closest("input[data-dt]");
+  if(dt){if(dt.value){if(confirm("Cancellare questa data?")){dt.value="";set(dt.dataset.p,"")}}else{const n=new Date(),v=pad(n.getDate())+"/"+pad(n.getMonth()+1)+"/"+n.getFullYear();dt.value=v;set(dt.dataset.p,v)}return}
+  const el=e.target.closest("input[data-f]");if(el){openSheet(el);return}
+  if(!e.target.closest("#sh"))return;
+  const b=e.target.closest("button");
+  if(e.target.closest(".shb")||(b&&b.hasAttribute("data-x"))){closeSheet();return}
+  if(!b)return;
+  if(b.dataset.v!==undefined)pick(b.dataset.v);
+  else if(b.hasAttribute("data-sg")){const m=$("#mn");m.value=m.value.startsWith("-")?m.value.slice(1):"-"+m.value;m.focus()}
+  else if(b.hasAttribute("data-ok")){const v=$("#mn").value.trim().replace(",",".");if(v!==""&&!isNaN(parseFloat(v)))pick(v)}
+  else if(b.hasAttribute("data-clr"))pick("");
+});
+$("#pv").onclick=()=>{mo--;if(mo<1){mo=12;y--}load()};
+$("#nx").onclick=()=>{mo++;if(mo>12){mo=1;y++}load()};
+
+/* ---------- PDF ---------- */
+function head(doc,t,sub){doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text(t,10,15);doc.setFont("helvetica","normal");doc.setFontSize(10.5);
+  doc.text("Mese: "+MN[mo-1]+"    Anno: "+y,10,22);doc.setFont("helvetica","bold");doc.text("RIV21 di Pustizzi Giuseppe",200,22,{align:"right"});doc.setFont("helvetica","normal");doc.setFontSize(8.5);if(sub)doc.text(sub,10,27.5)}
+function foot(doc,W){doc.setFontSize(10);doc.text("Firma RHACCP: ______________________________",10,W-10)}
+const TS={theme:"grid",styles:{fontSize:9,halign:"center",valign:"middle",lineColor:[0,0,0],lineWidth:.2,textColor:0,minCellHeight:7},headStyles:{fillColor:[230,230,230],textColor:0,fontStyle:"bold",fontSize:8},margin:{left:10,right:10}};
+function days(f){const a=[];for(let d=1;d<=dim();d++)a.push(f(d));return a}
+const val=v=>v==null?"":String(v);
+function pT(doc){head(doc,"MONITORAGGIO TEMPERATURE","Limiti: frigo BIANCO max +8 °C - frigo GIALLO max +8 °C - congelatore -18 °C. Rilevare 2 volte al giorno.");
+  doc.autoTable({...TS,startY:31,head:[[{content:"Giorno",rowSpan:2},{content:"FRIGO BIANCO (max 8 °C)",colSpan:2},{content:"FRIGO GIALLO (max 8 °C)",colSpan:2},{content:"Congelatore -18 °C",rowSpan:2},{content:"Firma",rowSpan:2}],["Mattina","Sera","Mattina","Sera"]],
+    body:days(d=>[d,...["bm","bs","gm","gs","c"].map(k=>val(get(`t.${d}.${k}`))),""]),
+    columnStyles:{0:{cellWidth:14,fontStyle:"bold"},6:{cellWidth:46}},styles:{...TS.styles,minCellHeight:6.6},
+    didParseCell:h=>{if(h.section==="body"&&h.column.index>=1&&h.column.index<=5){const f=h.column.index===5;if(bad(f?1:0,h.cell.raw)){h.cell.styles.textColor=[198,40,40];h.cell.styles.fontStyle="bold"}}}});
+  foot(doc,297)}
+function pP(doc){head(doc,"PULIZIE GIORNALIERE","Una X quando hai pulito TUTTO: pavimenti, pareti lavabili basse, utensili, attrezzature, piani di lavoro, macchina del caffè, espositori, bagno.");
+  doc.autoTable({...TS,startY:31,head:[["Giorno","Fatto","Firma"]],body:days(d=>[d,get("p."+d)?"X":"",""]),columnStyles:{0:{cellWidth:18,fontStyle:"bold"},1:{cellWidth:28,fontStyle:"bold",fontSize:12},2:{}},styles:{...TS.styles,minCellHeight:6.6}});foot(doc,297);
+  doc.addPage();head(doc,"PULIZIE SETTIMANALI","Data in cui è stata eseguita la pulizia.");
+  doc.autoTable({...TS,startY:31,head:[["Settimana","Frigo BIANCO","Frigo GIALLO","Congelatore","Scaffalature","Pedana","Firma"]],
+    body:[1,2,3,4,5].map(w=>[w+"ª",...["fb","fg","co","sc","pe"].map(c=>val(get(`w.${w}.${c}`))),""]),styles:{...TS.styles,minCellHeight:15},columnStyles:{0:{cellWidth:20,fontStyle:"bold"},6:{cellWidth:44}}});
+  const yy=doc.lastAutoTable.finalY+14;doc.setFont("helvetica","bold");doc.setFontSize(14);doc.text("PULIZIE MENSILI",10,yy);doc.setFont("helvetica","normal");
+  doc.autoTable({...TS,startY:yy+4,head:[["Cosa","Data","Firma"]],body:[["Pareti / soffitti",val(get("m.ps")),""],["Plafoniere",val(get("m.pl")),""],["Porte",val(get("m.po")),""]],styles:{...TS.styles,minCellHeight:15},columnStyles:{0:{cellWidth:60},1:{cellWidth:40}}});foot(doc,297)}
+function pI(doc){head(doc,"INSETTI E RODITORI - CONTROLLO GIORNALIERO","X in 'Tutto OK' se non vedi insetti, roditori o rosicchiature. Altrimenti scrivi cosa hai visto e dove.");
+  doc.autoTable({...TS,startY:31,head:[["Giorno","Tutto OK","Se NO: cosa hai visto / dove","Firma"]],body:days(d=>[d,get(`i.${d}.ok`)?"X":"",val(get(`i.${d}.n`)),""]),
+    columnStyles:{0:{cellWidth:14,fontStyle:"bold"},1:{cellWidth:22,fontStyle:"bold",fontSize:12},2:{cellWidth:80,halign:"left"},3:{cellWidth:74}},styles:{...TS.styles,minCellHeight:6.6}});foot(doc,297)}
+function pR(doc){const R=(D.r||[]).slice();while(R.length<11)R.push({});
+  doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text("CONTROLLO DELLE MATERIE PRIME IN ENTRATA",10,14);doc.setFontSize(11);doc.text("RIV21 di Pustizzi Giuseppe",287,14,{align:"right"});doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Mese: "+MN[mo-1]+" "+y+"    Conforme = tutto a posto. Se non conforme scrivi nelle Note e compila Problemi e azioni.",10,20);
+  const dt=s=>s?s.split("-").reverse().join("/"):"";
+  doc.autoTable({...TS,startY:24,head:[["Data","Fornitore","Trasporto","Merce","Etichette","N. fattura","Accettata / Respinta","Note","Firma"]],
+    body:R.map(r=>[dt(r.d),val(r.f),val(r.tr),val(r.me),val(r.et),val(r.n),val(r.ac),val(r.o),""]),styles:{...TS.styles,fontSize:8,minCellHeight:12},
+    columnStyles:{0:{cellWidth:20},1:{cellWidth:38},2:{cellWidth:24},3:{cellWidth:24},4:{cellWidth:24},5:{cellWidth:26},6:{cellWidth:26},7:{cellWidth:50},8:{cellWidth:45}}});
+  doc.setFontSize(10);doc.text("Firma RHACCP: ______________________________",10,200)}
+function pX(doc){head(doc,"PROBLEMI E AZIONI",null);doc.setFontSize(8.5);doc.text("Compila solo se qualcosa non va: temperatura sopra 8 °C, merce non conforme, insetti o roditori.",10,27.5);
+  doc.autoTable({...TS,startY:31,head:[["Data","Cosa non andava","Cosa ho fatto","Risolto","Firma"]],body:Array.from({length:11},()=>["","","","",""]),styles:{...TS.styles,minCellHeight:20},columnStyles:{0:{cellWidth:22},3:{cellWidth:18},4:{cellWidth:34}}});foot(doc,297)}
+async function makePdf(w){
+  const msg=$("#msg");if(!window.jspdf){msg.textContent="Libreria PDF non caricata, ricarica la pagina.";return}
+  const {jsPDF}=window.jspdf,secs=w==="all"?["t","p","i","r"]:[w],P={t:pT,p:pP,i:pI,r:pR};
+  let doc=null;
+  secs.forEach(s=>{const land=s==="r";if(!doc)doc=new jsPDF({unit:"mm",format:"a4",orientation:land?"l":"p"});else doc.addPage("a4",land?"l":"p");P[s](doc)});
+  if(w==="all"||w==="t"){doc.addPage("a4","p");pX(doc)}
+  const names={all:"Tutto",t:"Temperature",p:"Pulizie",i:"Insetti_roditori",r:"Merci_in_entrata"};
+  const fn=`HACCP_${key()}_${names[w]}.pdf`;
+  const a=document.createElement("a");a.href=URL.createObjectURL(doc.output("blob"));a.download=fn;document.body.appendChild(a);a.click();a.remove();msg.textContent="PDF pronto: "+fn;
+}
+(async()=>{
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  load();
+})();
+render();
+</script></body></html>
